@@ -21,6 +21,13 @@ public class ApiExceptionHandler {
     return new ResponseEntity<>(apiError, HttpStatus.NOT_FOUND);
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ApiError> handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest req) {
+    ApiError apiError = ApiError.of(HttpStatus.BAD_REQUEST, ex.getMessage(), req.getRequestURI());
+
+    return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+  }
+
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
   public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
       HttpServletRequest req) {
