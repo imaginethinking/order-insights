@@ -64,6 +64,21 @@ Follow these Spring Boot practices:
 
 This assignment intentionally performs some filtering and aggregation in Java so you can practise Streams. With a large production dataset, it would often be better to filter and aggregate in database queries.
 
+## How to Work Through the Tasks
+
+The tasks are progressive. Implement the behaviour requested in the current task, then refactor it when a later task explicitly asks you to.
+
+Use these rules when an instruction could be interpreted in more than one way:
+
+- do not duplicate an existing calculation just to satisfy a functional interface requirement;
+- if an existing method already has the right input and output types, use a method reference or lambda to represent it as `Function`, `Predicate`, or another functional interface;
+- derived DTO fields should normally be calculated while mapping from the domain model rather than added as new persisted entity fields;
+- when a task names a class such as `OrderCalculations`, `OrderRules`, or `PricingFunctions`, put the requested reusable behaviour there;
+- when a task does not prescribe a class, keep the code where it is most readable, usually in the relevant service or a small helper;
+- task-specific instructions take precedence over the global rules in this README.
+
+The assignment sometimes asks you to write a simple version first and refactor it later. That is intentional. Do not implement a later task early unless doing so is necessary to keep the current code clean.
+
 ## Future Frontend Compatibility
 
 No frontend is required now, but the backend should be easy to consume from a future Angular, React, or similar client.
@@ -349,6 +364,8 @@ CustomerSummaryDto
 GET /api/orders/{orderId}/quote?policy=LOYALTY
 ```
 
+The `policy` query parameter is required.
+
 Response:
 
 ```text
@@ -366,7 +383,7 @@ Return predictable JSON errors.
 | invalid enum/query value | `400 Bad Request` |
 | negative `minTotal` | `400 Bad Request` |
 | negative `placedWithinDays` | `400 Bad Request` |
-| unknown discount policy | `400 Bad Request` |
+| missing or invalid discount policy | `400 Bad Request` |
 
 Use a small, consistent `ApiError` DTO containing at least:
 
@@ -442,3 +459,19 @@ Complete the files in this order:
 9. `Task_8_Testing_and_Review.md`
 
 Each task builds on the previous ones. Avoid jumping ahead unless you are already comfortable with the earlier concepts.
+
+## What Each Task Owns
+
+| Task | Main responsibility |
+|---|---|
+| Task 0 | Project structure, entities, repositories, DTO shapes, seed data, controller/service shells, and error handling |
+| Task 1 | Order totals, order summary mapping, and `GET /api/orders/{orderId}` |
+| Task 2 | Order search, sorting, `noneMatch`, and a service method that accepts a `Predicate<Order>` |
+| Task 3 | Reusable reporting calculations, customer summaries, and the customer summary endpoint |
+| Task 4 | Refactor Task 2 filters into reusable and composable `Predicate<Order>` rules |
+| Task 5 | Generic pricing functions using `Function`, `UnaryOperator`, `BiFunction`, `compose`, and `andThen` |
+| Task 6 | Discount policies, policy resolution, pricing service, and the quote endpoint |
+| Task 7 | Assemble the final sales report and add the `Consumer<CustomerSummaryDto>` exercise |
+| Task 8 | Unit tests and final review |
+
+This separation is intentional. For example, Task 3 builds the calculations used by the sales report, while Task 7 assembles the final `SalesReportDto`.

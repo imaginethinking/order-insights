@@ -73,7 +73,9 @@ Keep repositories concerned with persistence only.
 
 ### 4. Create the API DTOs
 
-Create the DTOs defined in `README.md`.
+Create the DTO records defined in `README.md` with the required fields and types.
+
+At this stage, the DTOs only need to represent the API contracts. You do **not** need to add all mapping or calculation logic yet. Later tasks tell you when each DTO should be populated.
 
 Records are recommended.
 
@@ -87,7 +89,9 @@ Create:
 - `ReportingService`
 - `PricingService`
 
-The methods may initially be incomplete.
+Add method or endpoint shells for the API described in `README.md`, but do not implement the Stream-based business logic yet.
+
+The project should compile and start. It is fine for later-task methods to remain incomplete until their task is reached.
 
 ### 6. Add consistent error handling
 
@@ -97,7 +101,9 @@ Create:
 - `ApiError`;
 - `ApiExceptionHandler`.
 
-Support the status codes listed in `README.md`.
+Set up the common JSON error shape now. As later tasks introduce missing resources and invalid query values, route those failures through this handler using the status codes in `README.md`.
+
+You do not need to manufacture errors for endpoints whose business logic has not been implemented yet.
 
 ### 7. Seed H2
 
@@ -105,8 +111,8 @@ Use any deterministic startup approach such as `CommandLineRunner`, `Application
 
 Create roughly:
 
-- 4–5 customers;
-- 8–12 orders.
+- 4-5 customers;
+- 8-12 orders.
 
 Your data must include:
 

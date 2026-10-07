@@ -67,9 +67,9 @@ otherwise                 -> 0%
 
 Add a reusable `totalQuantity(Order)` calculation to `OrderCalculations` and use a Stream to sum line quantities.
 
-At least one policy must be created with a lambda or method reference rather than a concrete implementation class.
+Reuse the percentage-discount `BiFunction` from Task 5 when a percentage policy applies.
 
-Reuse the percentage discount `BiFunction` from Task 5.
+At least one policy must be represented directly by a lambda or method reference. You do not need a separate implementation class for each policy.
 
 ## 3. Create `DiscountPolicyResolver`
 
@@ -79,47 +79,43 @@ Create:
 pricing/DiscountPolicyResolver.java
 ```
 
-It should translate:
-
-```java
-DiscountPolicyType
-```
-
-into the corresponding:
-
-```java
-DiscountPolicy
-```
-
-Example flow:
+Give it one clear responsibility:
 
 ```text
-LOYALTY
--> resolver
--> loyalty DiscountPolicy
+DiscountPolicyType -> DiscountPolicy
 ```
 
-Keep the switch that selects a policy out of the method that calculates the price.
+For example, a `resolve(DiscountPolicyType type)` method can return the corresponding policy behaviour.
 
-Inject the resolver through the `PricingService` constructor. This keeps policy selection separate from price calculation and makes the interaction easy to unit test.
+Keep policy selection here. Do not put a `switch` over policy types inside the price-calculation method in `PricingService`.
+
+Inject the resolver through the `PricingService` constructor so the service can be unit tested with a controlled policy.
 
 ## 4. Implement `PricingService`
 
-The service should:
+Implement the quote flow in this order:
 
 1. load the order;
-2. calculate subtotal;
-3. resolve the requested policy;
-4. calculate the raw discount amount;
-5. round the discount amount to 2 decimal places;
-6. calculate:
-   ```text
-   finalTotal = subtotal - roundedDiscountAmount
-   ```
-7. return `subtotal`, `discountAmount`, and `finalTotal` at 2 decimal places using `RoundingMode.HALF_UP`;
-8. return `QuoteDto`.
+2. calculate the raw subtotal with `OrderCalculations.subtotal(...)` or the Task 5 subtotal function;
+3. resolve the requested `DiscountPolicy`;
+4. pass the order and raw subtotal to the policy;
+5. round the returned discount amount to 2 decimal places with the Task 5 rounding operator;
+6. calculate `rawSubtotal - roundedDiscountAmount`;
+7. round the final total to 2 decimal places;
+8. round the subtotal to 2 decimal places for the DTO;
+9. return `QuoteDto` with the requested policy type.
+
+This gives one defined rounding sequence and avoids rounding the percentage calculation more than once.
 
 Any existing order may be quoted, including a cancelled order.
+
+For:
+
+```http
+GET /api/orders/{orderId}/quote?policy=LOYALTY
+```
+
+the `policy` query parameter is required.
 
 Unknown order:
 
@@ -127,11 +123,13 @@ Unknown order:
 404 Not Found
 ```
 
-Unknown policy:
+Missing or invalid policy value:
 
 ```text
 400 Bad Request
 ```
+
+Spring may reject an invalid enum query value before the resolver is called. That is fine as long as it is returned through the consistent API error handling.
 
 ## Why a Custom Interface Here?
 

@@ -43,6 +43,16 @@ GET /api/reports/customers/{customerId}
 
 Unless stated otherwise, exclude `CANCELLED` orders.
 
+## Scope of This Task
+
+Task 3 builds the reusable calculations needed for reporting.
+
+- Complete `GET /api/reports/customers/{customerId}` in this task.
+- Build the helper calculations that will later populate `SalesReportDto`.
+- Do **not** duplicate those calculations when Task 7 assembles the final sales report.
+
+For Part A, "qualifying orders" means orders whose status is not `CANCELLED`. Apply that rule consistently to every calculation in Part A.
+
 ## Part A: Sales Calculations
 
 ### 1. Overall totals
@@ -114,7 +124,7 @@ Sort the DTO list by category name so API output is deterministic.
 
 ### 5. Order total lookup
 
-Create:
+From the qualifying orders, create:
 
 ```java
 Map<UUID, BigDecimal>
@@ -132,11 +142,13 @@ Use:
 Collectors.toMap(...)
 ```
 
+and reuse `OrderCalculations.subtotal(...)` for the value.
+
 Order IDs are unique, so handling duplicate keys is not required.
 
 ### 6. Partition high value and normal orders
 
-Use the order total lookup from the previous step.
+Use the total lookup from the previous step when deciding whether each qualifying order is high value.
 
 High value means:
 
@@ -150,17 +162,28 @@ Use:
 Collectors.partitioningBy(...)
 ```
 
-Convert both partitions into:
+The cleanest flow is:
+
+```text
+qualifying Order objects
+-> partition using the total lookup
+-> sort each partition
+-> map each Order to its ID
+```
+
+Produce both:
 
 ```text
 highValueOrderIds
 normalValueOrderIds
 ```
 
-Sort both ID lists by:
+Sort the orders in each partition by:
 
 1. `placedOn` descending;
 2. order ID ascending when dates tie.
+
+Then map the sorted orders to IDs. The lookup classifies the order, while the `Order` object still provides the date needed for sorting.
 
 ### 7. Distinct SKU summary
 
@@ -203,9 +226,25 @@ totalSpend
 averageOrderValue
 ```
 
-Use `OrderRepository` data and filter by the order's customer ID. Do not add a reverse `Customer.orders` relationship solely to make this report easier.
+### 1. Create one reusable customer-summary calculation
 
-Use `CustomerRepository.findById(...)` to distinguish:
+Create one internal helper that can build a `CustomerSummaryDto` from a known `Customer` and the available orders, or use an equivalent design that avoids duplicating the calculation.
+
+That helper should:
+
+1. select the non-cancelled orders belonging to the customer;
+2. calculate `orderCount`;
+3. calculate `totalSpend` using `OrderCalculations.subtotal(...)`;
+4. calculate `averageOrderValue`;
+5. return the completed DTO.
+
+This same calculation will be useful for the endpoint, top-customer selection, and the Task 7 consumer exercise.
+
+Do not add a reverse `Customer.orders` relationship solely to make this report easier.
+
+### 2. Implement the customer summary endpoint
+
+Use `CustomerRepository.findById(...)` first so you can distinguish:
 
 ```text
 existing customer with no qualifying orders
@@ -244,11 +283,15 @@ scale = 2
 RoundingMode.HALF_UP
 ```
 
-### Top customer helper
+Do not divide when `orderCount` is zero.
+
+### 3. Top customer helper
+
+Use the same customer-summary calculation rather than implementing spend totals again.
 
 Only customers with at least one order whose status is not `CANCELLED` are eligible.
 
-Create a helper that can determine the top customer by:
+Determine the top customer by:
 
 1. highest total spend;
 2. if tied, customer name ascending;
@@ -261,6 +304,8 @@ Represent absence internally as:
 ```java
 Optional<CustomerSummaryDto>
 ```
+
+Task 7 will place this result into `SalesReportDto`.
 
 ## Suggested Pipeline Shape
 
@@ -295,9 +340,9 @@ Collectors.summingInt(...)
 - [ ] Order counts by tier are calculated.
 - [ ] Units and revenue by category are calculated.
 - [ ] `toMap()` is used for order totals.
-- [ ] High/normal partitions are both used.
+- [ ] High/normal partitions are both used and are sorted before mapping to IDs.
 - [ ] Distinct SKU summary is produced.
-- [ ] Customer summary endpoint works.
+- [ ] Customer summary calculation is reusable and the endpoint works.
 - [ ] Customers with no qualifying orders receive a summary with zero values.
 - [ ] Top customer logic is deterministic.
 - [ ] Money division uses explicit rounding.

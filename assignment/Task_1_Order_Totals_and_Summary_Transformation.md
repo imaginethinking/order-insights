@@ -85,25 +85,29 @@ order lines
 -> reduce to one BigDecimal total
 ```
 
-Use `BigDecimal.ZERO` as an appropriate identity value.
+Use `BigDecimal.ZERO` as the identity value.
 
-### 3. Detect backorders
+### 3. Derive the backorder flag for the summary
 
-Use:
+When you build an `OrderSummaryDto`, derive `containsBackOrder` from the order's lines using:
 
 ```java
 anyMatch(...)
 ```
 
-to determine whether any line has:
+The result should be `true` when at least one `OrderLine` has:
 
 ```text
 backOrdered == true
 ```
 
-### 4. Build `OrderSummaryDto`
+`OrderLine.backOrdered` is the stored state. `OrderSummaryDto.containsBackOrder` is a derived summary value.
 
-Populate all fields defined in `README.md`.
+Do **not** add a separate `containsBackOrder` field to the `Order` entity. You may calculate the value directly in the mapping code or in a small helper if that makes the mapping easier to read.
+
+### 4. Create one `Order -> OrderSummaryDto` mapping
+
+Populate every field in `OrderSummaryDto` from the supplied `Order`.
 
 Remember:
 
@@ -111,27 +115,54 @@ Remember:
 lineCount = number of OrderLine objects
 ```
 
-### 5. Make the mapping reusable
+Use `OrderCalculations.subtotal(order)` for `totalValue` and the `anyMatch(...)` result from the previous step for `containsBackOrder`.
 
-Represent the transformation as:
+Create **one** implementation of this mapping. A static factory such as `OrderSummaryDto.from(Order)`, a mapper helper, or a service helper are all acceptable. Do not create several versions of the same mapping.
+
+### 5. Represent that existing mapping as a `Function`
+
+This step is about treating the mapping from Part 4 as reusable behaviour. It is **not** asking you to write the mapping again.
+
+Where `OrderService` needs to turn an `Order` into an `OrderSummaryDto`, represent the existing mapping as:
 
 ```java
 Function<Order, OrderSummaryDto>
 ```
 
-or return that function from a helper method.
+If your Part 4 mapping is a normal method whose signature is already:
 
-Use a method reference where it improves readability.
+```text
+Order -> OrderSummaryDto
+```
 
-### 6. Handle a missing order
+use a method reference when it reads clearly. Then actually use the `Function`, for example as the mapper passed to a Stream or by calling `apply(...)`.
 
-Handle the repository's `Optional<Order>` result explicitly.
+If you instead choose a helper method that returns a `Function<Order, OrderSummaryDto>`, use that approach consistently. Do **not** implement both approaches just to satisfy the task.
+
+### 6. Implement the order summary endpoint flow
+
+For:
+
+```http
+GET /api/orders/{orderId}
+```
+
+use this flow:
+
+```text
+repository lookup
+-> handle Optional<Order>
+-> map the Order to OrderSummaryDto
+-> return the DTO
+```
 
 Unknown ID:
 
 ```text
 404 Not Found
 ```
+
+Do not return the JPA entity from the controller.
 
 ## APIs to Investigate
 
@@ -155,9 +186,10 @@ BigDecimal::add
 
 - [ ] `OrderCalculations` contains reusable calculations for line values and subtotals.
 - [ ] Order subtotal is correct.
-- [ ] Backorder detection works.
+- [ ] `containsBackOrder` is derived from `OrderLine.backOrdered` with `anyMatch(...)`.
 - [ ] `OrderSummaryDto` is returned.
-- [ ] Mapping uses reusable `Function` behaviour.
+- [ ] There is one Order-to-summary mapping implementation.
+- [ ] That mapping is actually used as `Function<Order, OrderSummaryDto>` behaviour.
 - [ ] A missing order returns 404.
 
 ## Suggested Reading

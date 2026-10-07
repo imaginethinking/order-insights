@@ -1,6 +1,6 @@
 # Task 4: Reusable Predicates and Business Rules
 
-> **Prerequisite:** complete Tasks 2–3. Refactor the search implementation from Task 2 in this task.
+> **Prerequisite:** complete Tasks 2-3. Refactor the search implementation from Task 2 in this task.
 
 ## Learning Objective
 
@@ -48,7 +48,25 @@ and refactor the Task 2 search logic to use reusable rules.
 
 ## Required Rules
 
-Implement named methods that return `Predicate<Order>`.
+Create named methods in `OrderRules` that return `Predicate<Order>`.
+
+The goal is for Task 2 search filters to call these rules rather than keep their own copies of the same conditions.
+
+### Exact status
+
+Accept an `OrderStatus` and match:
+
+```text
+order.status == supplied status
+```
+
+### Exact customer tier
+
+Accept a `CustomerTier` and match:
+
+```text
+order.customer.tier == supplied tier
+```
 
 ### Active order
 
@@ -56,11 +74,15 @@ Implement named methods that return `Predicate<Order>`.
 status != CANCELLED
 ```
 
+A natural way to express this is by reusing the exact-status rule and `negate()` rather than writing another status comparison.
+
 ### Preferred customer
 
 ```text
 tier == SILVER OR tier == GOLD
 ```
+
+A natural way to express this is by composing two exact-tier predicates with `or(...)`.
 
 ### Minimum value
 
@@ -88,6 +110,8 @@ Implement it by reusing `minimumValue(...)`, not by duplicating the comparison.
 
 ### Region
 
+Accept a `Region` and match:
+
 ```text
 order.customer.region == supplied region
 ```
@@ -98,15 +122,11 @@ order.customer.region == supplied region
 no order line is backordered
 ```
 
+Move or reuse the Task 2 `noneMatch(...)` behaviour here so there is only one implementation of this rule.
+
 ### Placed within N days
 
-Give the rule method a supplied:
-
-```java
-Supplier<LocalDate>
-```
-
-The method should accept:
+The rule method should accept:
 
 ```text
 days + Supplier<LocalDate>
@@ -114,7 +134,7 @@ days + Supplier<LocalDate>
 
 Production code can pass `LocalDate::now`; tests can pass a lambda that returns a fixed date.
 
-Match orders from:
+For each call to the predicate, obtain the business date from the supplier and match orders from:
 
 ```text
 businessDate.minusDays(days)
@@ -130,37 +150,37 @@ inclusive.
 
 ## Composition Requirements
 
-Create at least one combined rule equivalent to:
+Use predicate composition for real rules rather than adding unused examples.
+
+By the end of this task, your implementation should demonstrate:
+
+- `negate()` through a meaningful rule such as active = NOT cancelled;
+- `or(...)` through a meaningful rule such as preferred = SILVER OR GOLD;
+- `and(...)` through at least one higher-level rule equivalent to:
 
 ```text
 active AND preferred AND high value
 ```
 
-Also use each of these to combine or invert rules:
-
-```java
-or(...)
-negate(...)
-```
-
-Example ideas:
-
-```text
-preferred OR high value
-NOT cancelled
-```
-
-Use combinations that express useful business rules.
+The combined rule can be exposed as another named method in `OrderRules`. It does not need a new REST endpoint.
 
 ## Refactor Task 2
 
-Update the search implementation from Task 2 so its filters reuse methods from `OrderRules`.
+Update the search implementation from Task 2 so it reuses `OrderRules` for:
 
-Also refactor the fully allocatable check from Task 2 to reuse the corresponding rule.
+- status;
+- tier;
+- region;
+- minimum total;
+- placed-within-days.
 
-Task 2 was allowed to use local predicates and `LocalDate.now()`.
+Only apply a rule when its matching query parameter is present.
 
-Task 4 should remove that duplication and use the supplied date instead.
+Keep the Task 2 search semantics and sort order unchanged. The purpose of this task is to move repeated conditions into reusable predicates, not to redesign the endpoint.
+
+Also refactor the Task 2 fully allocatable method so it delegates to, or otherwise reuses, the `OrderRules` predicate instead of keeping a second `noneMatch(...)` implementation.
+
+Task 2 was allowed to use local predicates and `LocalDate.now()`. Task 4 should remove that duplication and use the supplied date behaviour.
 
 ## Why Use Standard `Predicate`?
 
@@ -177,9 +197,8 @@ A custom interface would not add useful domain meaning here.
 ## Definition of Done
 
 - [ ] `OrderRules` exists.
-- [ ] Rules have precise meanings matching this file.
-- [ ] At least one rule is returned from a method.
-- [ ] `and()`, `or()`, and `negate()` are demonstrated.
+- [ ] Exact status, exact tier, region, minimum value, date, active, preferred, high value, and allocatable rules exist.
+- [ ] `and()`, `or()`, and `negate()` are used in meaningful named rules.
 - [ ] Date rules use `Supplier<LocalDate>`.
 - [ ] Task 2 search reuses these rules.
 - [ ] No unnecessary custom predicate interface exists.

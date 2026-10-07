@@ -1,6 +1,6 @@
 # Task 8: Testing and Review
 
-> **Prerequisite:** complete Tasks 1–7. Test the behaviour you built rather than Spring framework internals.
+> **Prerequisite:** complete Tasks 1-7. Test the behaviour you built rather than Spring framework internals.
 
 ## Learning Objective
 
@@ -32,13 +32,25 @@ verify(...)
 ArgumentCaptor
 ```
 
-## `OrderService` Tests
+## `OrderCalculations` Tests
+
+Test the pure helper directly. Mockito is not needed here.
 
 Cover:
 
-- order subtotal;
-- DTO transformation;
-- backorder detection;
+- line value;
+- subtotal with several lines;
+- subtotal with one line;
+- total quantity after Task 6.
+
+## `OrderService` Tests
+
+Mock `OrderRepository` where the service loads data.
+
+Cover:
+
+- order summary transformation;
+- backorder flag in the returned DTO;
 - one search filter;
 - several combined filters;
 - date sorting;
@@ -47,13 +59,16 @@ Cover:
 - default sorting;
 - empty search result;
 - missing order ID;
-- `findFirst()` returning the most recent matching order;
-- fully allocatable `noneMatch()` behaviour.
+- `findFirst()` returning the most recent matching order, including the same-date tie rule;
+- fully allocatable behaviour.
+
+Do not re-test the internal arithmetic of `OrderCalculations` in every service test. Verify that the service result is correct at the service boundary.
 
 ## `ReportingService` Tests
 
 Cover:
 
+- overall report totals;
 - grouping by customer tier;
 - `flatMap` category aggregation;
 - category revenue;
@@ -69,9 +84,11 @@ Cover:
 - all orders cancelled;
 - all fields of an empty report.
 
-## Predicate Tests
+## `OrderRules` Predicate Tests
 
-Test rules individually and in composition:
+Test the reusable rules directly with `Predicate.test(...)`.
+
+Cover the individual rules used by search and the composed rules using:
 
 ```text
 A AND B
@@ -87,37 +104,33 @@ order total exactly equals £500 report threshold
 placedOn exactly equals earliest allowed date
 ```
 
-Pass at least one:
-
-```java
-Predicate<Order>
-```
-
-directly into the unit under test.
-
 Use a deterministic:
 
 ```java
 Supplier<LocalDate>
 ```
 
-for tests of date rules.
+for date-rule tests.
 
-## Function Tests
+Also pass at least one `Predicate<Order>` directly into the Task 2 method that accepts behaviour and verify that the supplied predicate controls the result.
 
-Test:
+## `PricingFunctions` Tests
+
+Test the functional-interface values directly with `apply(...)`.
+
+Cover:
 
 - subtotal `Function`;
 - rounding `UnaryOperator`;
 - percentage discount `BiFunction`;
-- composed `Function`;
-- the difference in execution order between:
-  - `compose()`
-  - `andThen()`
+- the `andThen(...)` subtotal-and-round composition;
+- the equivalent `compose(...)` subtotal-and-round composition.
 
-Test the reusable `Function` behaviour directly with `apply(...)`, and test composed functions as behaviour rather than reimplementing their calculations inside the test.
+For the two composition forms, verify that both produce the expected result and be able to explain their execution order. You do not need to invent an unrelated example solely to make the two forms return different values.
 
 ## `PricingService` Tests
+
+Mock the repository and `DiscountPolicyResolver` as appropriate.
 
 Test:
 
@@ -127,9 +140,9 @@ Test:
 - exact bulk boundary of quantity `20`;
 - a mocked `DiscountPolicyResolver` returning a `DiscountPolicy` defined as a lambda;
 - missing order;
-- correct final rounding.
+- the defined rounding sequence and final total.
 
-Verify that the service uses the policy returned by the resolver rather than calculating its own discount.
+Verify that the service uses the `DiscountPolicy` returned by the resolver rather than calculating its own policy-specific discount.
 
 ## Consumer + `ArgumentCaptor`
 
@@ -147,19 +160,26 @@ Use:
 ArgumentCaptor<CustomerSummaryDto>
 ```
 
-to capture the DTOs passed into the consumer and verify their contents.
+to capture every DTO passed into the consumer.
+
+Verify:
+
+- the consumer is invoked once per customer;
+- the captured DTO contents are correct;
+- the zero-order customer is present;
+- invocation order follows customer name ascending, then customer ID ascending.
 
 This is the required `ArgumentCaptor` use case. Do not invent another collaborator purely for testing practice.
 
 ## Definition of Done
 
-- [ ] JUnit 5 tests cover the main business logic.
-- [ ] Repositories are mocked where appropriate.
+- [ ] Pure helpers are tested directly without unnecessary mocks.
+- [ ] Service dependencies are mocked where appropriate.
 - [ ] Spring framework classes are not unnecessarily mocked.
 - [ ] Empty and boundary cases are covered.
-- [ ] Predicate behaviour is passed into the method that accepts it.
-- [ ] Reusable functions are tested directly and in composition.
-- [ ] `ArgumentCaptor` verifies consumer output.
+- [ ] A supplied `Predicate<Order>` is tested as behaviour.
+- [ ] Reusable pricing functions are tested directly and in composition.
+- [ ] `ArgumentCaptor` verifies consumer output and order.
 - [ ] Tests remain readable and focused.
 
 ---

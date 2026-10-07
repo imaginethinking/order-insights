@@ -1,6 +1,6 @@
 # Task 7: Final Report and Consumer Callback
 
-> **Prerequisite:** complete Tasks 1–6. This task should assemble and reuse existing calculations rather than introduce duplicate report logic.
+> **Prerequisite:** complete Tasks 1-6. This task should assemble and reuse existing calculations rather than introduce duplicate report logic.
 
 ## Learning Objective
 
@@ -27,13 +27,23 @@ The important distinction is that the Stream should **calculate** the result fir
 
 ## Part A: Complete `SalesReportDto`
 
-Implement:
+Now implement:
 
 ```http
 GET /api/reports/sales
 ```
 
-Reuse the calculations from earlier tasks.
+Task 3 already created the calculations. Task 7 is primarily an **assembly step**.
+
+In `ReportingService`:
+
+1. obtain the orders needed for the report;
+2. reuse the Task 3 helpers to calculate each report field;
+3. reuse the Task 3 top-customer helper;
+4. build one `SalesReportDto`;
+5. return it from the existing reporting endpoint.
+
+Do not rewrite category totals, customer spend, partitioning, or SKU logic inside the DTO-construction method.
 
 The final report must contain:
 
@@ -58,17 +68,17 @@ Rules:
 - `topCustomer` is absent internally as an `Optional` when there are no qualifying orders and becomes `null` only when building the API DTO;
 - when there are no qualifying orders, use the values for an empty report defined in `README.md`.
 
-At least one substantial calculation should clearly resemble:
+At least one substantial calculation from the earlier work should clearly retain a pipeline shape such as:
 
 ```text
 collection
 -> filter
 -> flatMap or map
 -> grouping / aggregation
--> response DTO
+-> result
 ```
 
-Break large calculations into focused helper methods.
+Keep the final assembly method readable by delegating to the focused helpers created earlier.
 
 ## Part B: `Consumer<CustomerSummaryDto>`
 
@@ -82,15 +92,23 @@ The exact method name is your choice.
 
 It should:
 
-1. load all customers;
-2. build a finished summary for each customer, including customers with zero qualifying orders;
-3. sort the summaries by customer name ascending, then customer ID ascending;
-4. complete all Stream calculations;
-5. invoke the supplied consumer once for each resulting DTO.
+1. load all customers once;
+2. load the order data needed for the summaries;
+3. reuse the customer-summary calculation from Task 3 for every customer, including customers with zero qualifying orders;
+4. sort the finished DTOs by customer name ascending, then customer ID ascending;
+5. materialise the finished list before invoking the consumer;
+6. invoke the supplied consumer exactly once for each DTO.
 
-This is a learning exercise only.
+Think of the flow as:
 
-Do **not** add:
+```text
+load data
+-> calculate and sort List<CustomerSummaryDto>
+-> finish the Stream
+-> pass each DTO to the Consumer
+```
+
+This is a service-only learning exercise. Do **not** add:
 
 - another REST endpoint;
 - file export;

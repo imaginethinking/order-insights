@@ -64,51 +64,59 @@ containing small, reusable pricing functions.
 
 ## Requirements
 
+For this exercise, keep the expected shape unambiguous by representing the three reusable behaviours in `PricingFunctions` as named functional-interface values. `static final` fields are a straightforward choice because the behaviours are stateless.
+
+If you deliberately prefer static methods that return these functions, that is also valid, but choose one style. Do not create both a field and a method for the same behaviour.
+
 ### 1. Subtotal function
 
-Create reusable behaviour equivalent to:
+Represent:
 
 ```text
 Order -> BigDecimal subtotal
 ```
 
-Base this function on `OrderCalculations.subtotal(...)` rather than duplicating business logic. A method reference is appropriate if the signatures align.
+as:
+
+```java
+Function<Order, BigDecimal>
+```
+
+Base it on `OrderCalculations.subtotal(...)`. Do not write another subtotal algorithm. A method reference is appropriate because the existing method already has the required shape.
 
 ### 2. Money rounding operator
 
-Create:
+Represent:
 
 ```text
 BigDecimal -> BigDecimal
 ```
 
-that returns a value at:
+as:
+
+```java
+UnaryOperator<BigDecimal>
+```
+
+It must return a value at:
 
 ```text
 2 decimal places
 RoundingMode.HALF_UP
 ```
 
-Use:
-
-```java
-UnaryOperator<BigDecimal>
-```
-
 ### 3. Percentage discount calculation
 
-Create:
+Represent:
+
+```text
+subtotal + decimal rate -> monetary discount amount
+```
+
+as:
 
 ```java
 BiFunction<BigDecimal, BigDecimal, BigDecimal>
-```
-
-where:
-
-```text
-first input  = subtotal
-second input = decimal rate
-output       = monetary discount amount
 ```
 
 Example:
@@ -119,9 +127,11 @@ rate     = 0.10
 result   = 10.00
 ```
 
+This function should perform the percentage calculation. Leave money rounding to the rounding operator so Task 6 can control exactly when rounding happens.
+
 ### 4. Compose functions
 
-Build a transformation equivalent to:
+Create a reusable transformation for:
 
 ```text
 Order
@@ -129,19 +139,21 @@ Order
 -> round to 2 decimal places
 ```
 
-Demonstrate:
+Build it once with:
 
 ```java
 andThen(...)
 ```
 
-and:
+and once with:
 
 ```java
 compose(...)
 ```
 
-They may produce equivalent results in this simple example; the point is to understand execution order.
+Both forms should represent the same execution sequence in this exercise. The purpose is to understand which side of the composition runs first.
+
+Do not add a REST endpoint in Task 5. Task 6 will use these functions from `PricingService`.
 
 ## Important
 
