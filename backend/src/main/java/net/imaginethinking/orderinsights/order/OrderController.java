@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import net.imaginethinking.orderinsights.customer.CustomerTier;
 import net.imaginethinking.orderinsights.customer.Region;
 import net.imaginethinking.orderinsights.order.dtos.OrderSummaryDto;
 
 
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/orders")
 public class OrderController {

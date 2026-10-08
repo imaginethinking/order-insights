@@ -6,9 +6,14 @@ import java.util.Map;
 import java.util.UUID;
 import net.imaginethinking.orderinsights.customer.CustomerTier;
 
-public record SalesReportDto(long totalOrder, BigDecimal totalRevenue,
-    Map<CustomerTier, Long> ordersByTier, List<CategorySalesDto> salesByCategory,
-    List<UUID> highValueOrderIds, List<UUID> normalValueOrderIds, String distinctSkuSummary,
+public record SalesReportDto(
+    long totalOrder,
+    BigDecimal totalRevenue,
+    Map<CustomerTier, Long> ordersByTier,
+    List<CategorySalesDto> salesByCategory,
+    List<UUID> highValueOrderIds,
+    List<UUID> normalValueOrderIds,
+    String distinctSkuSummary,
     CustomerSummaryDto topCustomer) {
 
 }

@@ -10,16 +10,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import net.imaginethinking.orderinsights.common.exception.ResourceNotFoundException;
 import net.imaginethinking.orderinsights.customer.CustomerTier;
 import net.imaginethinking.orderinsights.customer.Region;
 import net.imaginethinking.orderinsights.order.dtos.OrderSummaryDto;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 public class OrderService {
-  private OrderRepository orderRepository;
+  private final OrderRepository orderRepository;
 
   public OrderSummaryDto getById(UUID orderId) {
     Order order = orderRepository.findById(orderId)

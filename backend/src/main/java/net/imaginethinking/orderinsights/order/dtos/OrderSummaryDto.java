@@ -1,6 +1,7 @@
 package net.imaginethinking.orderinsights.order.dtos;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.UUID;
 import net.imaginethinking.orderinsights.order.Order;
@@ -23,7 +24,7 @@ public record OrderSummaryDto(
         order.getStatus(),
         order.getPlacedOn(),
         order.getLines().size(),
-        OrderCalculations.subtotal(order),
+        OrderCalculations.subtotal(order).setScale(2, RoundingMode.HALF_UP),
         order.getLines().stream()
             .anyMatch(OrderLine::isBackOrdered));
   }
