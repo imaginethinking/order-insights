@@ -37,21 +37,6 @@ public class OrderService {
       BigDecimal minTotal,
       Integer placedWithinDays,
       SortType sort) {
-    LocalDate todayDate = LocalDate.now();
-
-    Predicate<Order> matchesStatus = order -> status != null ? order.getStatus() == status : true;
-    Predicate<Order> matchesTier = order -> tier != null ? order.getCustomer().getTier() == tier : true;
-    Predicate<Order> matchesRegion = order -> region != null ? order.getCustomer().getRegion() == region : true;
-    Predicate<Order> hasMinTotal = order -> minTotal != null
-        ? OrderCalculations.subtotal(order).compareTo(minTotal) >= 0
-        : true;
-    Predicate<Order> isPlacedWithinDays = placedWithinDays != null
-        ? order -> {
-          LocalDate pastDate = todayDate.minusDays(placedWithinDays);
-          return (order.getPlacedOn().isEqual(pastDate) || order.getPlacedOn().isAfter(pastDate))
-              && (order.getPlacedOn().isEqual(todayDate) || order.getPlacedOn().isBefore(todayDate));
-        }
-        : order -> true;
 
     Comparator<Order> compareByPlacedOn = Comparator.comparing(Order::getPlacedOn);
     Comparator<Order> compareByTotal = Comparator.comparing(OrderCalculations::subtotal);
@@ -59,11 +44,11 @@ public class OrderService {
     Comparator<Order> compareById = Comparator.comparing(Order::getId);
 
     Stream<Order> stream = orderRepository.findAll().stream()
-        .filter(matchesStatus)
-        .filter(matchesTier)
-        .filter(matchesRegion)
-        .filter(hasMinTotal)
-        .filter(isPlacedWithinDays);
+        .filter(OrderRules.hasStatus(status))
+        .filter(OrderRules.hasCustomerTier(tier))
+        .filter(OrderRules.hasRegion(region))
+        .filter(OrderRules.minimumValue(minTotal))
+        .filter(OrderRules.placedWithinDays(placedWithinDays, LocalDate::now));
 
     switch (sort) {
       case DATE:
@@ -92,11 +77,6 @@ public class OrderService {
     return response;
   }
 
-  public boolean isAllocatable(Order order) {
-    return order.getLines().stream()
-        .noneMatch(OrderLine::isBackOrdered);
-  }
-
   public Optional<Order> getMostRecentMatchingOrder(Predicate<Order> predicate) {
     List<Order> orders = this.orderRepository.findAll();
 
@@ -106,6 +86,10 @@ public class OrderService {
             .comparing(Order::getPlacedOn).reversed()
             .thenComparing(Order::getId))
         .findFirst();
+  }
+
+  public boolean isAllocatable(Order order) {
+    return OrderRules.isFullyAllocatable().test(order);
   }
 
 }
